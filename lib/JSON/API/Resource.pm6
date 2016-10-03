@@ -1,16 +1,14 @@
 role JSON::API::Attr {
-	method json-api-attr {True}
+	has Str $.json-api-attr-name is rw = self.name.subst(/^ <[$%@&]> '!'/, "");
 }
 
-role JSON::API::Id {
-	method json-api-id {True}
-}
+role JSON::API::Id does JSON::API::Attr {}
 
-multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)		is export {
+multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)	is export {
 	$attr does JSON::API::Id;
 }
 
-multi trait_mod:<is>(Attribute $attr, :json-api-attr($)!)	is export {
+multi trait_mod:<is>(Attribute $attr, :json-api-attr($)!)			is export {
 	$attr does JSON::API::Attr;
 }
 
@@ -25,8 +23,8 @@ role JSON::API::Resource {
 
 	multi method save(::?CLASS:D:)		{…}
 
-	multi method json-api-attrs {
-		|self.^attributes(:all).grep(JSON::API::Attr | JSON::API::Id)
+	method !json-api-attrs {
+		|self.^attributes(:all).grep(JSON::API::Attr)
 	}
 
 	method !id-attr {
@@ -34,4 +32,11 @@ role JSON::API::Resource {
 	}
 
 	method resource-id {self!id-attr.get_value(self)}
+
+	method json-api-attrs-hash {
+		do for self!json-api-attrs -> $attr {
+			my \value = $attr.get_value(self);
+			$attr.json-api-attr-name => value if value.defined
+		}.Hash
+	}
 }
