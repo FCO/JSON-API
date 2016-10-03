@@ -4,12 +4,17 @@ role JSON::API::Attr {
 
 role JSON::API::Id does JSON::API::Attr {}
 
-multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)	is export {
+multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)				is export {
 	$attr does JSON::API::Id;
 }
 
-multi trait_mod:<is>(Attribute $attr, :json-api-attr($)!)			is export {
+multi trait_mod:<is>(Attribute $attr, Str :json-api-attr($name)!)	is export {
 	$attr does JSON::API::Attr;
+	$attr.json-api-attr-name = $name if $name.defined
+}
+
+multi trait_mod:<is>(Attribute $attr, Bool :json-api-attr($)!)		is export {
+	$attr does JSON::API::Attr
 }
 
 role JSON::API::Resource {
