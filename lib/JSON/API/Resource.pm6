@@ -3,7 +3,7 @@ role JSON::API::Attr {
 }
 
 role JSON::API::Id {
-	method json-api-attr {True}
+	method json-api-id {True}
 }
 
 multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)		is export {
