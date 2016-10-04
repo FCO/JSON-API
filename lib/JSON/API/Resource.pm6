@@ -1,3 +1,4 @@
+use JSON::API::Document;
 role JSON::API::Attr {
 	has Str		$.json-api-attr-name is rw	= self.name.subst(/^ <[$%@&]> '!'/, "");
 }
@@ -10,7 +11,7 @@ multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)				is export {
 
 multi trait_mod:<is>(Attribute $attr, Str :json-api-attr($name)!)	is export {
 	trait_mod:<is>($attr, :json-api-attr);
-	$attr.json-api-attr-name = $name if $name.defined
+	$attr.json-api-attr-name = $name with $name
 }
 
 multi trait_mod:<is>(Attribute $attr, Bool :json-api-attr($)!)		is export {
@@ -18,22 +19,42 @@ multi trait_mod:<is>(Attribute $attr, Bool :json-api-attr($)!)		is export {
 }
 
 role JSON::API::Resource {
+	method JSON-API(::CLASS:D:) {
+		$.json-api-attrs-hash
+	}
+
 	multi method load(::?CLASS:U: $id) {
 		my \obj = ::?CLASS.new: :$id;
 		obj.load;
 		obj
 	}
 
-	multi method load(::?CLASS:D:)		{…}
+	multi method list(::?CLASS:U:)	{…}
 
-	multi method save(::?CLASS:D:)		{…}
+	multi method load(::?CLASS:D:)	{…}
+
+	multi method save(::?CLASS:D:)	{…}
+
+	method json-api-data(|req) {
+		JSON::API::Document.FromJSONAPI( {:data([self.json-api-request(|req).map(*.JSON-API)])}).to-json
+	}
+
+	multi method json-api-request(::?CLASS:U: "GET") {
+		|gather for |::?CLASS.list -> $id {
+			take ::?CLASS.load($id)
+		}
+	}
+
+	multi method json-api-request(::?CLASS:U: "GET", $id) {
+		::?CLASS.load($id)
+	}
 
 	multi method json-api-attrs {
 		|self.^attributes(:all).grep(JSON::API::Attr)
 	}
 
-	multi method json-api-attrs(:$changed! where -> $v {?$v}) {
-		|self.^attributes(:all).grep(-> $par {$par ~~ JSON::API::Attr && $par.has_changed})
+	multi method json-api-attrs(Bool :$changed! where ?*) {
+		|self.^attributes(:all).grep({$_ ~~ JSON::API::Attr && .has_changed})
 	}
 
 	method !id-attr {

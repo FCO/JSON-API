@@ -7,6 +7,11 @@ has Str 	$.name		is json-api-attr<fullname>	is rw;
 has	Str		$.nickname	is json-api-attr			is rw = ($!name // "").words.first: * >= 3;
 has Email	$.email		is json-api-attr			is rw;
 
+multi method list(::?CLASS:U:) {
+	say "list";
+	^42;
+}
+
 multi method load(::?CLASS:D:) {
 	say "load";
 }
