@@ -1,17 +1,10 @@
 role JSON::API::Attr {
 	has Str		$.json-api-attr-name is rw	= self.name.subst(/^ <[$%@&]> '!'/, "");
-
-	method set_value(|) {
-		my \ret = nextsame;
-		note "set_value";
-		ret
-	}
 }
 
 role JSON::API::Id does JSON::API::Attr {}
 
 multi trait_mod:<is>(Attribute $attr, :json-api-id($)!)				is export {
-	note $attr;
 	$attr does JSON::API::Id;
 }
 
@@ -21,8 +14,7 @@ multi trait_mod:<is>(Attribute $attr, Str :json-api-attr($name)!)	is export {
 }
 
 multi trait_mod:<is>(Attribute $attr, Bool :json-api-attr($)!)		is export {
-	note $attr;
-	$attr does JSON::API::Attr
+	$attr does JSON::API::Attr;
 }
 
 role JSON::API::Resource {
