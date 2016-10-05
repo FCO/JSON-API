@@ -1,75 +1,25 @@
-use JSON::Fast;
-role ToJSONAPI {
+use JSON::Class;
+
+role JSON::API::Class is JSON::Class {
 	method to-json {
-		to-json $.ToJSONAPI.Hash
-	}
-
-	method from-json(Str \json) {
-		::?CLASS.FromJSONAPI: from-json(json)
-	}
-
-	method !list-of-attr {
-		|self.^attributes
-	}
-
-	method ToJSONAPI {
-		die if self.^can("validate") and not self.validate;
-		my %hash;
-		|do for self!list-of-attr -> $attr {
-			my $name = $attr.name.subst(/^ <[$%@&]> '!'/, "");
-			my $value = $attr.get_value(self);
-			$value .= ToJSONAPI if $value.^can("ToJSONAPI");
-			with $value -> $val {
-				if $val ~~ Positional {
-					my %tmp;
-					for @$val -> (:$key, :$value) {
-						%tmp{$key} = $value
-					}
-					$name => %tmp
-				} else {
-					$name => $val
-				}
-			}
-		}
-	}
-
-	multi method FromJSONAPI(::?CLASS:U: %data) {
-		my $obj = ::?CLASS.new;
-		$obj.FromJSONAPI(%data);
-		$obj
-	}
-
-	multi method FromJSONAPI(::?CLASS:_: @data) {
-		@data
-	}
-
-	multi method FromJSONAPI(::?CLASS:D: %data) {
-		for self!list-of-attr -> $attr {
-			my \key = $attr.name.subst(/^ <[$%@&]> '!'/, '');
-			if %data{key}:exists {
-				if $attr.get_value(self).^can("FromJSONAPI") {
-					$attr.set_value: self, $attr.get_value(self).FromJSONAPI(%data{key})
-				} else {
-					$attr.set_value: self, %data{key}
-				}
-			}
-		}
-		if self.^can("validate") {
-			die unless self.validate
-		}
+		nextwith(:skip-null) with self
 	}
 }
 
-class JSON::API::Document does ToJSONAPI {
+class JSON::API::Document does JSON::API::Class {
 	role Pagination {
 	}
 
-	class Resource does ToJSONAPI {
+	class Relationship does JSON::API::Class {}
+
+	class Attributes does JSON::API::Class { }
+
+	class Resource does JSON::API::Class {
 		has $.id;
 		has $.type;
 
-		has $.attributes;
-		has $.relationships;
+		has Attributes		$.attributes;
+		has Relationship	$.relationships;
 		has $.links;
 		has $.meta;
 
@@ -78,7 +28,7 @@ class JSON::API::Document does ToJSONAPI {
 		}
 	}
 
-	class Links does ToJSONAPI does Pagination {
+	class Links does JSON::API::Class does Pagination {
 		has $.self;
 		has $.related;
 	}
